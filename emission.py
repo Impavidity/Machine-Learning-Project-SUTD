@@ -3,13 +3,16 @@ This is the part 2 of the project:
 Emission Estimation
 '''
 # -*-coding: utf-8 -*-
-#import copy
 import json
 
 class WordWithTag(object):
     '''This is the class for each word with tag'''
     def __init__(self, word, tag):
         self.__word = word
+        self.__tag = tag
+
+    def set_tag(self, tag):
+        '''Set the tag'''
         self.__tag = tag
 
     def get_word(self):
@@ -28,10 +31,12 @@ class Sentence(object):
     '''This is the class for each sentence'''
     def __init__(self):
         self.__sentence = []
+        self.__length = 0
 
     def add_word_tag_pair(self, word):
         '''add word to the sentence'''
         self.__sentence.append(word)
+        self.__length += 1
 
     def get_sentence(self):
         '''Get the word-tag pair list'''
@@ -45,11 +50,20 @@ class Sentence(object):
         '''Get tag list'''
         return [item.get_tag() for item in self.__sentence]
 
+    def get_length(self):
+        '''Get the length of sentence'''
+        return self.__length
+
+    def __getitem__(self, i):
+        return self.__sentence[i]
+
+
 class EmissionEstimate(object):
     '''This is the class for emission estimate'''
     def __init__(self):
         self.__train_file = None
         self.__corpus_list = []
+        self.__corpus_list_new = None
         self.tag_dict = {}
         self.word_dict = {}
         self.__test_result = None
@@ -76,7 +90,7 @@ class EmissionEstimate(object):
         return tag
 
     @classmethod
-    def __word_process(cls, word):
+    def word_process(cls, word):
         '''Lowercase the word'''
         return word.lower()
 
@@ -85,10 +99,11 @@ class EmissionEstimate(object):
         try:
             file_read = open(file_dir, "r")
             sentence = Sentence()
+            self.__corpus_list_new = []
             for line in file_read.readlines():
                 if len(line.strip().split(" ")) == 2:
                     if word_process_flag:
-                        word = self.__word_process(line.strip().split(" ")[0])
+                        word = self.word_process(line.strip().split(" ")[0])
                     else:
                         word = line.strip().split(" ")[0]
                     tag = line.strip().split(" ")[1]
@@ -99,8 +114,9 @@ class EmissionEstimate(object):
                     # add the word-tag into parameter
                     self.__add_word(word,tag)
                 else:
-                    self.__corpus_list.append(sentence)
+                    self.__corpus_list_new.append(sentence)
                     sentence = Sentence()
+            self.__corpus_list += self.__corpus_list_new
         except Exception, error:
             print "[FILE] Read", file_dir, "Error:", error
             exit(0)
@@ -127,10 +143,28 @@ class EmissionEstimate(object):
         self.__file_process(file_dir, word_process_flag)
     
 
-    def get_corpus_list(self):
+    def get_corpus_list(self, para="total"):
         '''Get the corpus list'''
-        return [sentence.get_sentence() for sentence in self.__corpus_list]
+        # you can choose get the new corpus or total corpus
+        if para == "total":
+            return [sentence.get_sentence() for sentence in self.__corpus_list]
+        else:
+            return [sentence.get_sentence() for sentence in self.__corpus_list_new]
 
+    def get_corpus_tag(self, para="total"):
+        '''Get the corpus tag'''
+        # you can choose get the new corpus or total corpus
+        if para == "total":    
+            return [sentence.get_tag_list() for sentence in self.__corpus_list]
+        else:
+            return [sentence.get_tag_list() for sentence in self.__corpus_list_new]
+    def get_corpus_word(self, para="total"):
+        '''Get the corpus tag'''
+        # you can choose get the new corpus or total corpus
+        if para == "total":
+            return [sentence.get_word_list() for sentence in self.__corpus_list]
+        else:
+            return [sentence.get_word_list() for sentence in self.__corpus_list_new]
     def __predict(self, word):
         try:
             prob = 0
@@ -163,7 +197,7 @@ class EmissionEstimate(object):
             for line in test_file.readlines():
                 if line != "\n":
                     if word_process_flag:
-                        word = self.__word_process(line.strip())
+                        word = self.word_process(line.strip())
                     else:
                         word = line.strip()
                     original_word = line.strip()
@@ -230,12 +264,12 @@ def main():
     model_for_POS = EmissionEstimate()
     model_for_POS.add_corpus("POS/train")
     model_for_POS.test("POS/dev.in","POS/dev.p2.out")
-    model_for_POS.accuracy_calc("POS/dev.p2.out_v2","POS/dev.out")
+    model_for_POS.accuracy_calc("POS/dev.p2.out","POS/dev.out")
 
     model_for_NPC = EmissionEstimate()
     model_for_NPC.add_corpus("NPC/train")
     model_for_NPC.test("NPC/dev.in","NPC/dev.p2.out")
-    model_for_NPC.accuracy_calc("NPC/dev.p2.out_v2","NPC/dev.out")
+    model_for_NPC.accuracy_calc("NPC/dev.p2.out","NPC/dev.out")
 
 
 if __name__ == "__main__":
