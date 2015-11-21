@@ -121,7 +121,6 @@ def main():
 	TransitionParameter = TransitionEstimate(TagSet, tagList)
 	TestSentence = GetTestSentence(TestFile="NPC/dev.in")
 	FixedParameter = FixedParameterCalc(TagDict, CountEmission, TestSentence)
-	#CheckFixedParameter(FixedParameter,TestSentence)
 	AnsTag = GetAns(CheckFile="NPC/dev.out")
 	PredictiveTag,Accuracy = Test(TagSet,TransitionParameter,FixedParameter,TestSentence,AnsTag, MainTag = "O")
 	WriteAns(TestSentence,PredictiveTag,"NPC/dev.p3.out")

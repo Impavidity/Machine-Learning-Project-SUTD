@@ -1,39 +1,47 @@
 # -*-coding: utf-8 -*-
-
+import copy
 import json
+
 '''
-# This function is for checking the training data format to see there is a space in the word
-def TrainingDataFormatCheck(FileDir):
-	fr = open(FileDir, "r")
-	i = 0
-	for line in fr.readlines():
-		i += 1
-		length = len(line.strip().split(" "))
-		if length != 2:
-			print i,length,line
+# This function is for checking 
+# the training data format to see 
+# there is a space in the word
+
+def training_data_format_check(FileDir):
+    fr = open(FileDir, "r")
+    i = 0
+    for line in fr.readlines():
+        i += 1
+        length = len(line.strip().split(" "))
+        if length != 2:
+            print i,length,line
 '''
 
+def FileProcess(FileDir): 
+	try:
+		fr = open(FileDir,"r")
+		wordList = []
+		tagList = []
+		words = []
+		tags = []
+		for line in fr.readlines():
+			if len(line.strip().split(" ")) == 2:
+				words.append(line.strip().split(" ")[0].lower())
+				tags.append(line.strip().split(" ")[1])
+			else:
+				wordList.append(words)
+				tagList.append(tags)
+				words = []
+				tags = []
+		return wordList, tagList
+	except IOError, e:
+		print "Read",FileDir,"Error:",e
+		exit(0)
+	else:
+		print "Read",FileDir,"Successfully!"
+		fr.close()
 
-
-
-def FileProcess(FileDir):
-	fr = open(FileDir,"r")
-	wordList = []
-	tagList = []
-	words = []
-	tags = []
-	for line in fr.readlines():
-		if len(line.strip().split(" ")) == 2:
-			words.append(line.strip().split(" ")[0])
-			tags.append(line.strip().split(" ")[1])
-		else:
-			wordList.append(words)
-			tagList.append(tags)
-			words = []
-			tags = []
-	return wordList, tagList
-
-
+# Get the tag set, remove the duplicate
 def getTags(tagList):
 	tag = set([])
 	for line in tagList:
@@ -42,12 +50,18 @@ def getTags(tagList):
 
 
 def EmissionProbabilityCalc(wordList, tagList):
+	# Get the tag set
 	TagSet = getTags(tagList)
+	# Get the number of sentence
 	Num = len(wordList)
+	# TagDict["tag"] = n means Count(tag) = n
 	TagDict = {}
+	# CountEmission["tag1"][O] = n means Count[tag1->O] = n
 	CountEmission = {}
 	for i in range(Num):
+		# Get the sentence length
 		SentenceLength = len(wordList[i])
+		# Count the word number
 		for j in range(SentenceLength):
 			if tagList[i][j] in TagDict:
 				TagDict[tagList[i][j]] += 1
@@ -62,11 +76,10 @@ def EmissionProbabilityCalc(wordList, tagList):
 			else:
 				CountEmission[tagList[i][j]] = {}
 				CountEmission[tagList[i][j]][wordList[i][j]] = 1
-
 	return TagDict, CountEmission, TagSet
 
 def ParameterCalc(TagDict, CountEmission):
-	parameter = CountEmission
+	parameter = copy.deepcopy(CountEmission)
 	for key in TagDict.keys():
 		for word in CountEmission[key].keys():
 			parameter[key][word] = float(CountEmission[key][word])/float(TagDict[key])
@@ -99,6 +112,7 @@ def FixedParameterCalc(TagDict, CountEmission, TestSentence):
 
 def Predict(TestSentence, FixedParameter):
 	PredictiveTag = []
+	#print FixedParameter["IN"]
 	for sentence in TestSentence:
 		TagForSentence = []
 		for word in sentence:
@@ -134,7 +148,10 @@ def AccuracyCalc(PredictiveTag, AnsTag):
 		for tagNum in range(SentenceLength):
 			if PredictiveTag[senNum][tagNum] == AnsTag[senNum][tagNum]:
 				Right += 1
-	return float(Right)/float(Total) 
+			else:
+				pass
+				#print "wrong:",PredictiveTag[senNum][tagNum], AnsTag[senNum][tagNum]
+	return float(Right)/float(Total)
 
 def GetTestSentence(TestFile):
 	TestFileRead = open(TestFile, "r")
@@ -142,7 +159,7 @@ def GetTestSentence(TestFile):
 	Words = []
 	for line in TestFileRead.readlines():
 		if line != "\n":
-			Words.append(line.strip())
+			Words.append(line.strip().lower())
 		else:
 			TestSentence.append(Words)
 			Words = []
@@ -208,12 +225,13 @@ def main():
 	#print json.dumps(TagDict, indent=4)
 	#print json.dumps(CountEmission,indent=4)
 	#print json.dumps(parameter, indent=4)
+	
 
 	wordList, tagList = FileProcess("POS/train")
 	TagDict, CountEmission, TagSet = EmissionProbabilityCalc(wordList, tagList)
 	# The parameter is not used in the test face but just finish a function for the question in the project
 	parameter = ParameterCalc(TagDict, CountEmission)
-	Accuracy = TestFace(TagDict, CountEmission, "POS/dev.in", "POS/dev.p2.out","POS/dev.out")
+	Accuracy = TestFace(TagDict, CountEmission, "POS/dev.in", "POS/dev.p2_with_lower.out","POS/dev.out")
 	print "The accuracy of POS:",Accuracy
 	#print json.dumps(TagDict, indent=4)
 	#print json.dumps(CountEmission,indent=4)
